@@ -1,4 +1,4 @@
-const yonoteCards = [
+export const yonoteCards = [
   [
     "yonote-1553ea0ae276",
     "JavaScript",

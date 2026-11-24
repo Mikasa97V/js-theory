@@ -3,3 +3,116 @@ details{margin:0 0 24px;padding:14px 18px;border:1px solid #344054;border-radius
 #answer{overflow-wrap:anywhere;line-height:1.65;color:#bfc9db}#answer img{display:block;max-width:100%;height:auto;margin:12px 0;border-radius:8px}#answer pre{white-space:pre;overflow-wrap:normal}
 .reference-filters{display:flex;flex-wrap:wrap;gap:12px 20px}.reference-filters label{display:grid;gap:6px}.reference-filters input{min-width:0;width:100%;font:inherit;color:inherit;background:#222d40;border:1px solid #46546d;border-radius:9px;padding:9px 13px}.reference-group h3{margin:24px 0 10px}.reference-group details{margin:0 0 8px;background:#222d40;overflow-wrap:anywhere}.reference-group summary small{font-weight:400}.reference-answer{margin-top:12px;white-space:pre-wrap;line-height:1.65;color:#bfc9db}.reference-answer img{display:block;max-width:100%;height:auto;margin:12px 0;border-radius:8px}.reference-answer pre{white-space:pre;overflow-wrap:normal}
 .reference-view{display:flex;align-items:center;gap:8px;margin-top:16px;cursor:pointer}.reference-view input{width:18px;height:18px;accent-color:#8ee5c5}.reference-question{display:block;width:100%;text-align:left;margin-bottom:8px}.reader-navigation{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;margin-top:24px;padding-top:16px;border-top:1px solid #344054}.reader-navigation button:disabled{opacity:.55;cursor:default}#reader-title{font-size:clamp(1.4rem,4vw,2rem);margin:8px 0 16px;scroll-margin-top:16px}#reader-position{margin-bottom:0}
+
+/* Keep long examples inside their cards and controls comfortable on touch screens. */
+pre {
+  max-width: 100%;
+  overscroll-behavior-inline: contain;
+}
+
+button, select, input[type="search"] {
+  min-height: 44px;
+}
+
+@media (max-width: 1180px) {
+  main {
+    width: 100%;
+    max-width: 980px;
+    padding-inline: clamp(16px, 4vw, 40px);
+  }
+
+  nav[aria-label="Режим"] {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 155px), 1fr));
+    gap: 8px;
+  }
+
+  .reference-filters {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  }
+
+  .reference-filters select {
+    width: 100%;
+  }
+
+  .reference-view {
+    min-height: 44px;
+  }
+
+  .reference-group summary {
+    display: list-item;
+    padding-block: 5px;
+  }
+
+  .reader-navigation > button {
+    flex: 1 1 190px;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 1180px) and (orientation: landscape) {
+  main {
+    padding-block: 24px;
+  }
+
+  h1 {
+    margin-top: 28px;
+  }
+
+  #coverage {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 540px) {
+  .reference-filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (pointer: coarse) {
+  button:hover:enabled {
+    border-color: #46546d;
+  }
+
+  button[aria-pressed="true"]:hover:enabled, #reveal:hover:enabled {
+    border-color: #8ee5c5;
+  }
+}
+
+.section-menu {
+  width: fit-content;
+  max-width: 100%;
+  margin: 24px 0;
+  padding: 0;
+}
+
+.section-menu summary {
+  min-height: 44px;
+  padding: 10px 14px;
+}
+
+.section-menu nav {
+  display: grid;
+  margin: 0;
+  padding: 0 10px 10px;
+  gap: 6px;
+}
+
+.section-menu nav button {
+  text-align: left;
+}
+
+.section-menu button[aria-current="page"] {
+  background: #8ee5c5;
+  border-color: #8ee5c5;
+  color: #102921;
+}
+
+select {
+  margin-inline-start: 8px;
+}
+
+.reference-filters select {
+  margin-inline-start: 0;
+}

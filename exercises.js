@@ -1,4 +1,4 @@
-const exercises = [
+export const exercises = [
   ['code-this', 'this', 'Что выведут два вызова?', '7\n3\n\nМетод получает this из объекта слева от точки. call явно задаёт другой объект для второго вызова.',
     'const item = { value: 7, read() { return this.value; } };\nconsole.log(item.read());\nconsole.log(item.read.call({ value: 3 }));'],
   ['code-closure', 'Замыкания', 'Что выведут три вызова счётчиков?', '1\n2\n1\n\nКаждый вызов counter создаёт своё окружение с отдельной переменной n. Функция a меняет одну переменную, а b — другую.',

@@ -1,0 +1,27 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>JS Theory — тренажёр собеседований</title><link rel="stylesheet" href="style.css">
+<body><main><header><strong>JS<span> THEORY</span></strong><a href="https://motley-plum-94a.notion.site/60e6905d16a54524974e461319f7ec6f">Конспект в Notion ↗</a></header>
+<h1>Подготовка к собеседованию</h1><p>Вспомни ответ, сверься с карточкой и отметь, когда вернуться к вопросу.</p>
+<nav aria-label="Режим"><button data-mode="study">Карточки</button><button data-mode="review">Повторение</button><button data-mode="mock">Собеседование</button><button data-mode="code">Что выведет код?</button><button data-mode="reference">Справочник</button></nav>
+<div id="training">
+<details open><summary>Карта прогресса</summary><div id="coverage"></div></details>
+<label>Тема <select id="topic"><option value="">Все темы</option></select></label>
+<p id="progress" role="status"></p><section id="card" aria-labelledby="question"><small id="category"></small><h2 id="question" tabindex="-1"></h2>
+<pre id="snippet" hidden><code></code></pre>
+<label id="draft-label" hidden>Твой ответ<textarea id="draft" rows="4" placeholder="Сформулируй ответ своими словами"></textarea></label>
+<button id="reveal">Показать ответ</button><div id="answer" hidden></div><div id="code-rating" hidden><button id="solved">Решено верно</button><button id="retry">Продолжить без отметки</button></div><div id="rating" hidden><button data-days="0">Сложно · через 10 мин</button><button data-days="1">Почти · завтра</button><button data-days="4">Знаю · через 4 дня</button></div></section>
+<footer><button id="skip">Пропустить →</button><button id="restart" hidden>Начать заново</button></footer>
+</div>
+<section id="reference" aria-labelledby="reference-title" hidden>
+  <h2 id="reference-title">Все вопросы и ответы</h2>
+  <div class="reference-filters">
+    <label>Поиск по вопросам и ответам
+      <input id="reference-search" type="search" placeholder="Например, замыкание">
+    </label>
+    <label>Тема
+      <select id="reference-topic"><option value="">Все темы</option></select>
+    </label>
+  </div>
+  <p id="reference-count" role="status"></p>
+  <div id="reference-list"></div>
+</section>
+<script src="exercises.js"></script><script src="yonote.js"></script><script src="app.js"></script></main></body></html>

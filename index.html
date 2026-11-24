@@ -21,7 +21,18 @@
       <select id="reference-topic"><option value="">Все темы</option></select>
     </label>
   </div>
+  <label class="reference-view"><input id="reference-reading" type="checkbox"> Режим чтения</label>
   <p id="reference-count" role="status"></p>
   <div id="reference-list"></div>
+  <article id="reference-reader" aria-labelledby="reader-title" hidden>
+    <button id="reader-back" type="button">← К списку вопросов</button>
+    <p id="reader-position"></p>
+    <h3 id="reader-title" tabindex="-1"></h3>
+    <div id="reader-answer" class="reference-answer"></div>
+    <div class="reader-navigation">
+      <button id="reader-previous" type="button">← Предыдущий вопрос</button>
+      <button id="reader-next" type="button">Следующий вопрос →</button>
+    </div>
+  </article>
 </section>
 <script src="exercises.js"></script><script src="yonote.js"></script><script src="app.js"></script></main></body></html>

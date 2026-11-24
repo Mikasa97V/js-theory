@@ -34,6 +34,20 @@ for (const name of topics) {
   referenceTopic.add(new Option(name, name));
 }
 
+const readingView = find('#reference-reading');
+const referenceList = find('#reference-list');
+const reader = find('#reference-reader');
+let readingQueue = [];
+let readingIndex = -1;
+
+readingView.onchange = renderReference;
+find('#reader-previous').onclick = () => openReferenceQuestion(readingIndex - 1);
+find('#reader-next').onclick = () => openReferenceQuestion(readingIndex + 1);
+find('#reader-back').onclick = () => {
+  reader.hidden = true;
+  referenceList.hidden = false;
+  referenceList.querySelectorAll('.reference-question')[readingIndex]?.focus();
+};
 referenceTopic.onchange = renderReference;
 referenceSearch.oninput = renderReference;
 
@@ -224,6 +238,10 @@ function renderReference() {
     ? `Вопросов: ${results.length} из ${cards.length}`
     : 'По этому запросу ничего не найдено';
 
+  readingQueue = [];
+  readingIndex = -1;
+  reader.hidden = true;
+  referenceList.hidden = false;
   const groups = [];
   for (const category of topics) {
     const matches = results.filter(card => card[1] === category);
@@ -235,14 +253,22 @@ function renderReference() {
     group.append(heading);
 
     for (const card of matches) {
-      const details = document.createElement('details');
-      const summary = document.createElement('summary');
+      const summary = document.createElement(readingView.checked ? 'button' : 'summary');
       summary.textContent = card[2];
       if (card[0].startsWith('yonote-')) {
         const source = document.createElement('small');
         source.textContent = ' · Yonote';
         summary.append(source);
       }
+      if (readingView.checked) {
+        const index = readingQueue.push(card) - 1;
+        summary.type = 'button';
+        summary.className = 'reference-question';
+        summary.onclick = () => openReferenceQuestion(index);
+        group.append(summary);
+        continue;
+      }
+      const details = document.createElement('details');
       const answer = document.createElement('div');
       answer.className = 'reference-answer';
       details.append(summary, answer);
@@ -255,5 +281,24 @@ function renderReference() {
     }
     groups.push(group);
   }
-  find('#reference-list').replaceChildren(...groups);
+  referenceList.replaceChildren(...groups);
+}
+
+function openReferenceQuestion(index) {
+  const card = readingQueue[index];
+  if (!card) return;
+  readingIndex = index;
+  const [id, category, question] = card;
+  find('#reader-position').textContent = [
+    category, id.startsWith('yonote-') ? 'Yonote' : '', `Вопрос ${index + 1} из ${readingQueue.length}`
+  ].filter(Boolean).join(' · ');
+  const heading = find('#reader-title');
+  heading.textContent = question;
+  renderAnswer(find('#reader-answer'), card);
+  find('#reader-previous').disabled = index === 0;
+  find('#reader-next').disabled = index === readingQueue.length - 1;
+  referenceList.hidden = true;
+  reader.hidden = false;
+  heading.focus();
+  heading.scrollIntoView({ block: 'start' });
 }

@@ -22,7 +22,7 @@ function inline(text) {
 }
 
 export function Answer({ card }) {
-  if (!isYonote(card)) return card[3];
+  if (!isYonote(card) && !card[4]?.level) return card[3];
   return card[3].split(/^[ \t]*```[^\n]*$/m).map((block, index) =>
     index % 2
       ? <pre key={index}><code>{block.replace(/^\n|\n$/g, '')}</code></pre>

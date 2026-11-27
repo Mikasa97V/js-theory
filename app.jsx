@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { cards } from './cards.js';
+import { cards as builtInCards } from './cards.js';
+import { nodejsCards } from './nodejs-cards.js';
+import { pythonCards } from './python-cards.js';
+import { mobileCards, mobileTopic } from './mobile-cards.js';
 import { exercises } from './exercises.js';
 import { Answer, isYonote } from './Answer.jsx';
 import './style.css';
@@ -12,7 +15,23 @@ const sections = {
   code: 'Что выведет код?',
   reference: 'Справочник'
 };
-const topics = [...new Set(cards.map(card => card[1]))];
+const areas = {
+  frontend: 'Фронтенд',
+  backend: 'Бэкенд',
+  mobile: 'Мобильная разработка'
+};
+const emptyTheory = { topics: [], cards: [] };
+const builtInCardsByArea = {
+  frontend: builtInCards,
+  backend: [...nodejsCards, ...pythonCards],
+  mobile: mobileCards
+};
+const builtInTopics = {
+  frontend: [...new Set(builtInCards.map(card => card[1]))],
+  backend: ['Node.js', 'Python'],
+  mobile: [mobileTopic]
+};
+const theoryKey = 'js-theory-custom-content';
 const storageKey = 'js-theory-progress';
 
 function loadProgress() {
@@ -20,7 +39,7 @@ function loadProgress() {
   catch { return {}; }
 }
 
-function TopicSelect({ value, onChange, disabled }) {
+function TopicSelect({ topics, value, onChange, disabled }) {
   return <label>Тема
     <select value={value} onChange={event => onChange(event.target.value)} disabled={disabled}>
       <option value="">Все темы</option>
@@ -29,7 +48,7 @@ function TopicSelect({ value, onChange, disabled }) {
   </label>;
 }
 
-function Navigation({ mode, onNavigate }) {
+function Navigation({ mode, onNavigate, hasCode }) {
   const menu = useRef(null);
   const trigger = useRef(null);
 
@@ -40,9 +59,9 @@ function Navigation({ mode, onNavigate }) {
       trigger.current.focus();
     }
   }}>
-    <summary ref={trigger}>☰ Меню <span>· {sections[mode]}</span></summary>
+    <summary ref={trigger}>Меню <span>· {sections[mode]}</span></summary>
     <nav aria-label="Разделы">
-      {Object.entries(sections).map(([id, name]) => <button key={id}
+      {Object.entries(sections).filter(([id]) => id !== 'code' || hasCode).map(([id, name]) => <button key={id}
         aria-current={mode === id ? 'page' : undefined}
         onClick={() => {
           menu.current.open = false;
@@ -53,7 +72,7 @@ function Navigation({ mode, onNavigate }) {
   </details>;
 }
 
-function makeQueue(mode, topic, records) {
+function makeQueue(mode, topic, records, cards) {
   if (mode === 'code') return exercises;
   const now = Date.now();
   const queue = cards.filter(([id, category]) => (!topic || category === topic)
@@ -66,22 +85,24 @@ function makeQueue(mode, topic, records) {
   return queue.slice(0, 5);
 }
 
-function Coverage({ records, onNavigate }) {
+function Coverage({ cards, topics, records, onNavigate, hasCode }) {
   const groups = topics.map(topic => [topic, cards.filter(card => card[1] === topic)]);
+  if (hasCode) groups.push(['Задания с кодом', exercises]);
+  if (!groups.length) return null;
   return <details open>
     <summary>Карта прогресса</summary>
-    <div id="coverage">{[...groups, ['Задания с кодом', exercises]].map(([name, items]) => {
+    <div id="coverage">{groups.map(([name, items]) => {
       const done = items.filter(([id]) => records[id]).length;
       const label = `${name} · ${done} из ${items.length}`;
-      return <div key={name}>
+      return <div key={items === exercises ? 'code' : `topic-${name}`}>
         <button onClick={() => items === exercises ? onNavigate('code') : onNavigate('study', name)}>{label}</button>
-        <progress aria-label={label} max={items.length} value={done} />
+        <progress aria-label={label} max={items.length || 1} value={done} />
       </div>;
     })}</div>
   </details>;
 }
 
-function Training({ session, records, canSave, onNavigate, onSave }) {
+function Training({ cards, topics, hasCode, session, records, canSave, onNavigate, onSave }) {
   const { mode, topic, queue } = session;
   const [index, setIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
@@ -106,17 +127,17 @@ function Training({ session, records, canSave, onNavigate, onSave }) {
   }
 
   return <>
-    <Coverage records={records} onNavigate={onNavigate} />
-    <TopicSelect value={topic} onChange={value => onNavigate(mode, value)} disabled={code} />
+    <Coverage hasCode={hasCode} cards={cards} topics={topics} records={records} onNavigate={onNavigate} />
+    <TopicSelect topics={topics} value={topic} onChange={value => onNavigate(mode, value)} disabled={code} />
     <p id="progress" role="status">
       {card ? `${code ? 'Задание' : 'Вопрос'} ${index + 1} из ${queue.length}` : 'Раунд завершён'}
       {' · '}{code ? 'Решено' : 'Отмечено карточек'}: {done} из {items.length}
       {!canSave && ' · Прогресс доступен до закрытия страницы'}
     </p>
     <section id="card" aria-labelledby="question">
-      {card && <small>{card[1]}{isYonote(card) && ' · Yonote'}</small>}
+      {card && <small>{card[1]}{card[4]?.level && ` · ${card[4].level}`}{isYonote(card) && ' · Yonote'}</small>}
       <h2 id="question" ref={heading} tabIndex={-1}>{card?.[2] ??
-        (mode === 'review' && !queue.length ? 'Пока нет карточек к повторению' : 'Все вопросы раунда пройдены')}</h2>
+        (!queue.length ? (mode === 'review' ? 'Пока нет карточек к повторению' : 'В этой теме пока нет вопросов') : 'Все вопросы раунда пройдены')}</h2>
       {card && <>
         {code && <pre><code>{card[4]}</code></pre>}
         {(mode === 'mock' || code) && <label key={card[0]}>Твой ответ
@@ -148,7 +169,7 @@ function ReferenceQuestion({ card }) {
   </details>;
 }
 
-function Reference({ filters, setFilters }) {
+function Reference({ cards, topics, filters, setFilters, editor }) {
   const { query, topic, reading } = filters;
   const [selected, setSelected] = useState(null);
   const title = useRef(null);
@@ -158,6 +179,8 @@ function Reference({ filters, setFilters }) {
   const results = cards.filter(([, category, question, answer]) =>
     (!topic || category === topic) && (!search || `${question} ${answer}`.toLocaleLowerCase('ru').includes(search)));
   const groups = topics.map(name => [name, results.filter(card => card[1] === name)]);
+  const visibleGroups = groups.filter(([name, items]) =>
+    items.length || (!search && (!topic || topic === name)));
   const ordered = groups.flatMap(([, items]) => items);
   const index = ordered.findIndex(([id]) => id === selected);
   const card = reading ? ordered[index] : undefined;
@@ -179,19 +202,20 @@ function Reference({ filters, setFilters }) {
 
   return <section id="reference" aria-labelledby="reference-title">
     <h2 id="reference-title">Все вопросы и ответы</h2>
+    {editor}
     <div className="reference-filters">
       <label>Поиск по вопросам и ответам
         <input type="search" placeholder="Например, замыкание" value={query} onChange={event => update({ query: event.target.value })} />
       </label>
-      <TopicSelect value={topic} onChange={value => update({ topic: value })} />
+      <TopicSelect topics={topics} value={topic} onChange={value => update({ topic: value })} />
     </div>
     <label className="reference-view">
       <input type="checkbox" checked={reading} onChange={event => update({ reading: event.target.checked })} /> Режим чтения
     </label>
-    <p role="status">{results.length ? `Вопросов: ${results.length} из ${cards.length}` : 'По этому запросу ничего не найдено'}</p>
+    <p role="status">{visibleGroups.length ? `Вопросов: ${results.length} из ${cards.length}` : (topics.length ? 'По этому запросу ничего не найдено' : 'В этой области пока нет тем. Добавь тему и вопрос выше.')}</p>
     {card ? <article aria-labelledby="reader-title">
       <button onClick={() => { returnFocus.current = selected; setSelected(null); }}>← К списку вопросов</button>
-      <p id="reader-position">{card[1]}{isYonote(card) && ' · Yonote'} · Вопрос {index + 1} из {ordered.length}</p>
+      <p id="reader-position">{card[1]}{card[4]?.level && ` · ${card[4].level}`}{isYonote(card) && ' · Yonote'} · Вопрос {index + 1} из {ordered.length}</p>
       <h3 id="reader-title" ref={title} tabIndex={-1}>{card[2]}</h3>
       <div className="reference-answer"><Answer card={card} /></div>
       <div className="reader-navigation">
@@ -199,27 +223,125 @@ function Reference({ filters, setFilters }) {
         <button disabled={index === ordered.length - 1} onClick={() => setSelected(ordered[index + 1][0])}>Следующий вопрос →</button>
       </div>
     </article> : <div ref={list}>
-      {groups.filter(([, items]) => items.length).map(([name, items]) => <div className="reference-group" key={name}>
+      {visibleGroups.map(([name, items]) => <div className="reference-group" key={name}>
         <h3>{name} · {items.length}</h3>
-        {items.map(item => reading
-          ? <button className="reference-question" data-question={item[0]} key={item[0]} onClick={() => setSelected(item[0])}>
-              {item[2]}{isYonote(item) && <small> · Yonote</small>}
-            </button>
-          : <ReferenceQuestion key={item[0]} card={item} />)}
+        {!items.length && <p>В этой теме пока нет вопросов.</p>}
+        {(items.some(item => item[4]?.level) ? ['Junior', 'Middle', null] : [null]).map(level => {
+          const matches = items.filter(item => (item[4]?.level ?? null) === level);
+          if (!matches.length) return null;
+          return <React.Fragment key={level ?? 'ungraded'}>
+            {level && <h4>{level} · {matches.length}</h4>}
+            {matches.map(item => reading
+              ? <button className="reference-question" data-question={item[0]} key={item[0]} onClick={() => setSelected(item[0])}>
+                  {item[2]}{isYonote(item) && <small> · Yonote</small>}
+                </button>
+              : <ReferenceQuestion key={item[0]} card={item} />)}
+          </React.Fragment>;
+        })}
       </div>)}
     </div>}
   </section>;
 }
 
+function loadTheory() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(theoryKey));
+    if (Array.isArray(saved?.topics) && Array.isArray(saved?.cards)) return { frontend: saved };
+    return Object.fromEntries(Object.keys(areas).flatMap(area => {
+      const content = saved?.[area];
+      return Array.isArray(content?.topics) && Array.isArray(content?.cards) ? [[area, content]] : [];
+    }));
+  } catch {}
+  return {};
+}
+
+function TheoryEditor({ topics, saveTopic, saveCard }) {
+  const [name, setName] = useState('');
+  const [topic, setTopic] = useState('');
+  const [question, setQuestion] = useState('');
+  const [answer, setAnswer] = useState('');
+  const [message, setMessage] = useState('');
+
+  return <details className="theory-editor">
+    <summary>Добавить тему или теорию</summary>
+    <form onSubmit={event => {
+      event.preventDefault();
+      const title = name.trim();
+      if (!title) return setMessage('Введи название темы.');
+      if (topics.some(item => item.toLocaleLowerCase('ru') === title.toLocaleLowerCase('ru'))) {
+        return setMessage('Тема с таким названием уже есть.');
+      }
+      if (!saveTopic(title)) return setMessage('Не удалось сохранить тему в браузере.');
+      setName('');
+      setTopic(title);
+      setMessage('Тема сохранена. Теперь можно добавить в неё вопрос.');
+    }}>
+      <label>Название новой темы<input required value={name} onChange={event => setName(event.target.value)} /></label>
+      <button>Создать тему</button>
+    </form>
+    <form onSubmit={event => {
+      event.preventDefault();
+      if (!topic || !question.trim() || !answer.trim()) return setMessage('Выбери тему и заполни вопрос и ответ.');
+      if (!saveCard(topic, question.trim(), answer.trim())) return setMessage('Не удалось сохранить вопрос в браузере.');
+      setQuestion('');
+      setAnswer('');
+      setMessage('Вопрос и ответ сохранены.');
+    }}>
+      <label>Тема вопроса<select required value={topic} onChange={event => setTopic(event.target.value)}>
+        <option value="">Выбери тему</option>
+        {topics.map(item => <option key={item}>{item}</option>)}
+      </select></label>
+      <label>Вопрос<input required value={question} onChange={event => setQuestion(event.target.value)} /></label>
+      <label>Ответ<textarea required rows={6} value={answer} onChange={event => setAnswer(event.target.value)} /></label>
+      <button>Добавить вопрос</button>
+    </form>
+    {message && <p role="status">{message}</p>}
+  </details>;
+}
+
 function App() {
+  const [theory, setTheory] = useState(loadTheory);
+  const [area, setArea] = useState('frontend');
+  const content = theory[area] ?? emptyTheory;
+  const hasCode = area === 'frontend';
+  const cards = [...(builtInCardsByArea[area] ?? []), ...content.cards];
+  const topics = [...new Set([...(builtInTopics[area] ?? []), ...content.topics])];
+
+  function saveTheory(updated) {
+    const next = { ...theory, [area]: updated };
+    try { localStorage.setItem(theoryKey, JSON.stringify(next)); }
+    catch { return false; }
+    setTheory(next);
+    return true;
+  }
+
+  const editor = <TheoryEditor topics={topics}
+    saveTopic={topic => saveTheory({ ...content, topics: [...content.topics, topic] })}
+    saveCard={(topic, question, answer) => saveTheory({
+      ...content, cards: [...content.cards, [`custom-${crypto.randomUUID()}`, topic, question, answer]]
+    })} />;
   const [records, setRecords] = useState(loadProgress);
   const [canSave, setCanSave] = useState(true);
   const [session, setSession] = useState(() => ({ mode: 'study', topic: '', queue: cards, round: 0 }));
   const [filters, setFilters] = useState({ query: '', topic: '', reading: false });
 
   function navigate(mode, topic = session.topic) {
-    const queue = mode === 'reference' ? [] : makeQueue(mode, topic, records);
+    const queue = mode === 'reference' ? [] : makeQueue(mode, topic, records, cards);
     setSession(previous => ({ mode, topic, queue, round: previous.round + 1 }));
+  }
+
+  function changeArea(nextArea) {
+    const mode = session.mode === 'code' ? 'study' : session.mode;
+    const customCards = theory[nextArea]?.cards ?? emptyTheory.cards;
+    const nextCards = [...(builtInCardsByArea[nextArea] ?? []), ...customCards];
+    setArea(nextArea);
+    setFilters(previous => ({ ...previous, query: '', topic: '' }));
+    setSession(previous => ({
+      mode,
+      topic: '',
+      queue: mode === 'reference' ? [] : makeQueue(mode, '', records, nextCards),
+      round: previous.round + 1
+    }));
   }
 
   function save(id, record) {
@@ -234,11 +356,16 @@ function App() {
       <strong>JS<span> THEORY</span></strong>
       <a href="https://motley-plum-94a.notion.site/60e6905d16a54524974e461319f7ec6f">Конспект в Notion ↗</a>
     </header>
-    <h1>Подготовка к собеседованию</h1>
-    <p>Вспомни ответ, сверься с карточкой и отметь, когда вернуться к вопросу.</p>
-    <Navigation mode={session.mode} onNavigate={navigate} />
-    {session.mode === 'reference' ? <Reference filters={filters} setFilters={setFilters} />
-      : <Training key={session.round} session={session} records={records} canSave={canSave} onNavigate={navigate} onSave={save} />}
+    <div className="navigation-bar">
+      <Navigation hasCode={hasCode} mode={session.mode} onNavigate={navigate} />
+      <label className="area-select">
+        <select value={area} onChange={event => changeArea(event.target.value)}>
+          {Object.entries(areas).map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+        </select>
+      </label>
+    </div>
+    {session.mode === 'reference' ? <Reference key={area} cards={cards} topics={topics} editor={editor} filters={filters} setFilters={setFilters} />
+      : <Training hasCode={hasCode} cards={cards} topics={topics} key={session.round} session={session} records={records} canSave={canSave} onNavigate={navigate} onSave={save} />}
   </main>;
 }
 
